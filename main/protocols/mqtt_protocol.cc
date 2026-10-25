@@ -6,9 +6,11 @@
 #include <esp_log.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <algorithm>
 #include <charconv>
 #include <cstring>
 #include <system_error>
+#include <vector>
 #include "assets/lang_config.h"
 
 #define TAG "MQTT"
@@ -331,14 +333,10 @@ bool MqttProtocol::OpenAudioChannel() {
 
         {
             std::lock_guard<std::mutex> lock(channel_mutex_);
-            if (sequence <= remote_sequence_) {
+            if (sequence <= remote_sequence_ || pending_audio_.count(sequence) != 0) {
                 ESP_LOGW(TAG, "Received duplicate/old audio sequence: %lu, last: %lu", sequence,
                          remote_sequence_);
                 return;
-            }
-            if (sequence != remote_sequence_ + 1) {
-                ESP_LOGW(TAG, "Received audio packet with wrong sequence: %lu, expected: %lu",
-                         sequence, remote_sequence_ + 1);
             }
         }
 
@@ -355,16 +353,52 @@ bool MqttProtocol::OpenAudioChannel() {
             ESP_LOGE(TAG, "Failed to decrypt audio data");
             return;
         }
+        // The server sends faster than real time, so waiting a little for a
+        // late packet costs no audible latency; the playback queue absorbs it.
+        constexpr size_t kReorderWindow = 8;
+        constexpr int64_t kReorderWaitUs = 300 * 1000;
+        // Past this, pending audio belongs to an earlier sentence: playing it
+        // would put the tail of one reply at the start of the next.
+        constexpr int64_t kStaleAudioUs = 1000 * 1000;
+        std::vector<std::unique_ptr<AudioStreamPacket>> ready;
         {
             std::lock_guard<std::mutex> lock(channel_mutex_);
-            if (sequence <= remote_sequence_) {
+            if (sequence <= remote_sequence_ || pending_audio_.count(sequence) != 0) {
                 return;
             }
-            remote_sequence_ = sequence;
+            const int64_t now_us = esp_timer_get_time();
+            int64_t oldest_us = now_us;
+            for (const auto& entry : pending_audio_) {
+                oldest_us = std::min(oldest_us, entry.second.arrival_us);
+            }
+            if (!pending_audio_.empty() && now_us - oldest_us > kStaleAudioUs) {
+                ESP_LOGW(TAG, "Dropped %u stale audio packets", static_cast<unsigned>(pending_audio_.size()));
+                pending_audio_.clear();
+                oldest_us = now_us;
+            }
+            pending_audio_[sequence] = PendingAudio{now_us, std::move(packet)};
+
+            if (pending_audio_.begin()->first != remote_sequence_ + 1) {
+                if (pending_audio_.size() <= kReorderWindow && now_us - oldest_us <= kReorderWaitUs) {
+                    return;  // wait for the missing packet
+                }
+                uint32_t first = pending_audio_.begin()->first;
+                ESP_LOGW(TAG, "Lost audio sequence: %lu..%lu", remote_sequence_ + 1, first - 1);
+                remote_sequence_ = first - 1;
+            } else if (pending_audio_.size() > 1) {
+                ESP_LOGI(TAG, "Reordered audio sequence: %lu", sequence);
+            }
+            while (!pending_audio_.empty() && pending_audio_.begin()->first == remote_sequence_ + 1) {
+                remote_sequence_ = pending_audio_.begin()->first;
+                ready.push_back(std::move(pending_audio_.begin()->second.packet));
+                pending_audio_.erase(pending_audio_.begin());
+            }
         }
         last_incoming_time_ = std::chrono::steady_clock::now();
         if (on_incoming_audio_ != nullptr) {
-            on_incoming_audio_(std::move(packet));
+            for (auto& p : ready) {
+                on_incoming_audio_(std::move(p));
+            }
         }
     });
 
@@ -498,6 +532,7 @@ void MqttProtocol::ParseServerHello(const cJSON* root) {
         aes_nonce_ = std::move(aes_nonce);
         local_sequence_ = 0;
         remote_sequence_ = 0;
+        pending_audio_.clear();
     }
     xEventGroupSetBits(event_group_handle_, MQTT_PROTOCOL_SERVER_HELLO_EVENT);
 }

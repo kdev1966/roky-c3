@@ -56,6 +56,14 @@ private:
     int udp_port_;
     uint32_t local_sequence_;
     uint32_t remote_sequence_;
+    // Reorder window for UDP audio: packets that arrive ahead of the expected
+    // sequence wait here (keyed by sequence, with arrival time) until the gap
+    // fills, the window overflows, or the oldest one waits too long.
+    struct PendingAudio {
+        int64_t arrival_us;
+        std::unique_ptr<AudioStreamPacket> packet;
+    };
+    std::map<uint32_t, PendingAudio> pending_audio_;
     esp_timer_handle_t reconnect_timer_;
 
     bool StartMqttClient(bool report_error=false);
