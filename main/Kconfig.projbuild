@@ -431,6 +431,9 @@ choice BOARD_TYPE
     config BOARD_TYPE_QUANDONG_S3_DEV
         bool "Quandong ESP32-S3 Development Board (全动)"
         depends on IDF_TARGET_ESP32S3
+    config BOARD_TYPE_ROKY_C3
+        bool "Roky C3 (WHA103)"
+        depends on IDF_TARGET_ESP32C3
     config BOARD_TYPE_RYMCU_BIGSMART
         bool "RYMCU BigSmart"
         depends on IDF_TARGET_ESP32S3
@@ -944,6 +947,15 @@ choice WAKE_WORD_TYPE
             Requires ESP32-S3, ESP32-P4, or ESP32-S31 and PSRAM
 
 endchoice
+
+config SR_WN_WN9S_ALEXA
+    bool "Alexa (wn9s_alexa)"
+    default n
+    depends on USE_ESP_WAKE_WORD
+    help
+        esp-sr ships the wn9s_alexa model but declares no Kconfig option for it.
+        The assets build packs every CONFIG_SR_WN_* model found in sdkconfig,
+        so declaring the symbol here is enough to embed it.
 
 config CUSTOM_WAKE_WORD
     string "Custom Wake Word"
