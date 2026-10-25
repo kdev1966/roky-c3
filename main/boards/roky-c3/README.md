@@ -59,3 +59,20 @@ Le serveur xiaozhi.me livre des paquets audio désordonnés, jusqu'à trois plac
 de retard. `mqtt_protocol.cc` les remet dans l'ordre au lieu de jeter les
 retardataires : fenêtre de 8 paquets ou 300 ms, puis le trou est déclaré perdu.
 Ce qui attend plus d'une seconde est jeté, pour ne pas mêler deux répliques.
+
+## Écrans, thème TV
+
+Roky est logé dans une mini TV LED : ses écrans parlent le langage d'un
+atelier de réparation TV.
+
+- **Allumage** : « ROKY », une barre de chargement, le nom de l'atelier.
+- **Visage animé** dès que Roky est prêt, et pendant les conversations.
+- **Au repos** (25 s sans échange, les yeux se ferment, puis 4 s) : le
+  **menu de service** (`SERVICE MODE` : modèle, version, heures de marche,
+  température, wifi ou IP, atelier et téléphone) pendant 15 s, puis
+  **« NO SIGNAL »** qui rebondit pendant 45 s, en boucle. Le cadre en
+  mouvement évite de marquer l'OLED.
+
+Le nom et le téléphone de l'atelier vivent dans `atelier.h`, **ignoré par
+git** car le dépôt est public. Copier `atelier.h.exemple` en `atelier.h` et
+le remplir ; sans lui, le build utilise les valeurs de l'exemple.

@@ -25,9 +25,10 @@ public:
     virtual void SetChatMessage(const char* role, const char* content) override;
 
 private:
-    // Trois ecrans possibles. L'IPL ne passe qu'une fois, au demarrage ;
-    // ensuite on alterne entre le visage et la console de veille.
-    enum class Screen { Ipl, Face, Console };
+    // Quatre ecrans, tous dans le theme TV de l'atelier : l'allumage ne
+    // passe qu'une fois ; au repos, menu de service et « NO SIGNAL »
+    // alternent ; le reste du temps, le visage.
+    enum class Screen { Boot, Face, Service, NoSignal };
 
     // Forme des yeux a un instant donne.
     enum class Shape { Rect, ArcSmile, ArcFrown };
@@ -43,7 +44,7 @@ private:
         int   shake_h, shake_v;
     };
 
-    lv_obj_t* bar_      = nullptr;   // barre d'etat : masquee en mode console
+    lv_obj_t* bar_      = nullptr;   // barre d'etat : masquee hors du visage
     lv_obj_t* face_ = nullptr;
     lv_obj_t* eye_[2]   = {nullptr, nullptr};
     lv_obj_t* arc_[2]   = {nullptr, nullptr};
@@ -53,32 +54,29 @@ private:
     lv_point_precise_t zzz_pts_[3][4]{};
     lv_point_precise_t slant_pts_[2][2]{};
 
-    // ---------------------------------------------- console « mainframe »
-    // 16 colonnes x 8 lignes en unscii_8 (8x8 px) : l'ecran entier, barre
-    // d'etat comprise. Les lignes defilent d'un cran entier, jamais au
-    // pixel : une image pleine coute 23 ms d'I2C a 400 kHz, un defilement
-    // fluide a 25 Hz mangerait plus de la moitie du bus.
-    lv_obj_t* console_   = nullptr;
-    lv_obj_t* con_label_ = nullptr;
-    lv_obj_t* con_cur_   = nullptr;   // curseur clignotant
+    // ---------------------------------------------- allumage de la TV
+    lv_obj_t* boot_      = nullptr;
+    lv_obj_t* boot_fill_ = nullptr;   // barre de chargement, sa partie pleine
 
-    Screen screen_     = Screen::Ipl;
-    bool   ipl_done_   = false;
-    int    ipl_step_   = 0;
-    int    ready_hold_ = -1;   // >= 0 : maintien de l'ecran apres READY
-    int    con_wait_   = 1;    // ticks avant la prochaine ligne
-    int    con_step_   = 0;    // rotation des lignes de veille
+    // ---------------------------------------------- menu de service
+    lv_obj_t* service_     = nullptr;
+    lv_obj_t* svc_label_   = nullptr;
+    char      svc_text_[7 * 17 + 1]{};
 
-    char con_[8][17]{};            // tampon circulaire des lignes affichees
-    char con_join_[8 * 17 + 1]{};  // les memes, jointes par des sauts de ligne
+    // ---------------------------------------------- « NO SIGNAL »
+    lv_obj_t* nosig_     = nullptr;   // fond noir plein ecran
+    lv_obj_t* nosig_box_ = nullptr;   // le cadre qui rebondit
+    int nosig_x_ = 10, nosig_y_ = 12, nosig_dx_ = 1, nosig_dy_ = 1;
+
+    Screen screen_    = Screen::Boot;
+    bool   boot_done_ = false;
+    int    veille_ticks_ = 0;   // duree passee dans les ecrans de repos
 
     void ShowScreen(Screen s);
-    void ConsoleRender();
-    void ConsoleReset();
-    void ConsolePush(const char* line);
-    void ConsoleTick(DeviceState state);
-    bool NextIplLine(char* out, size_t n);    // false quand la sequence est finie
-    void NextIdleLine(char* out, size_t n);
+    void VeilleTick(DeviceState state);
+    void BootTick();
+    void ServiceRender();
+    void NoSignalTick();
 
     // Capteur de temperature interne de l'ESP32-C3. Il donne la temperature
     // de la PUCE, pas celle de l'air : ce qui compte est l'ecart entre

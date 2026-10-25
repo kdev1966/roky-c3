@@ -9,6 +9,7 @@
                 "CONFIG_FREERTOS_USE_TICKLESS_IDLE=y",
                 "CONFIG_USE_ESP_WAKE_WORD=y",
                 "CONFIG_LV_FONT_UNSCII_8=y",
+                "CONFIG_LV_FONT_UNSCII_16=y",
                 "CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y"
             ]
         }

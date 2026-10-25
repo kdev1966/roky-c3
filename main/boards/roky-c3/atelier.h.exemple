@@ -1,0 +1,7 @@
+// Copier ce fichier en atelier.h (ignore par git) et y mettre les vraies
+// coordonnees : elles s'affichent au demarrage et dans le menu de service.
+// Le depot est public : atelier.h n'y est jamais envoye.
+#pragma once
+
+#define ATELIER_NOM "ATELIER TV"      // 16 caracteres au plus
+#define ATELIER_TEL "00000000"

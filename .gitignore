@@ -22,3 +22,6 @@ mmap_generate_*.h
 # Sauvegarde du firmware d origine (contient les identifiants wifi)
 backup/
 .DS_Store
+
+# Coordonnees de l atelier (le depot est public)
+main/boards/roky-c3/atelier.h
