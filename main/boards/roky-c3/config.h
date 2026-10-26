@@ -32,5 +32,9 @@
 // connecteur USB-C se retrouve en haut, comme dans le boitier prevu.
 #define DISPLAY_MIRROR_X false
 #define DISPLAY_MIRROR_Y false
+// Luminosite de l'OLED (contraste SSD1306, 0 a 255). Le pilote d'ESP-IDF ne
+// la regle pas : l'ecran restait a sa valeur d'usine, 127. Monte au maximum
+// pour compenser le film de protection pose devant l'ecran.
+#define DISPLAY_CONTRAST 255
 
 #endif // _BOARD_CONFIG_H_

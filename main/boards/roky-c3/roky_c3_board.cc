@@ -134,6 +134,15 @@ private:
             return;
         }
 
+        // Luminosite : le pilote ne touche ni au contraste, ni a la
+        // pre-charge, ni a VCOMH, qui restent a leurs valeurs d'usine.
+        const uint8_t contraste[] = {DISPLAY_CONTRAST};
+        const uint8_t precharge[] = {0xF1};   // usine 0x22
+        const uint8_t vcomh[]     = {0x40};   // usine 0x20
+        esp_lcd_panel_io_tx_param(panel_io_, 0x81, contraste, 1);
+        esp_lcd_panel_io_tx_param(panel_io_, 0xD9, precharge, 1);
+        esp_lcd_panel_io_tx_param(panel_io_, 0xDB, vcomh, 1);
+
         ESP_LOGI(TAG, "Turning display on");
         ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(panel_, true));
 
