@@ -629,7 +629,11 @@ void Application::InitializeProtocol() {
             } else if (strcmp(state->valuestring, "stop") == 0) {
                 Schedule([this]() {
                     if (GetDeviceState() == kDeviceStateSpeaking) {
-                        if (listening_mode_ == kListeningModeManualStop) {
+                        bool single_turn = false;
+#if CONFIG_SINGLE_TURN_AFTER_WAKE_WORD
+                        single_turn = listening_mode_ == kListeningModeAutoStop;
+#endif
+                        if (listening_mode_ == kListeningModeManualStop || single_turn) {
                             SetDeviceState(kDeviceStateIdle);
                         } else {
                             SetDeviceState(kDeviceStateListening);

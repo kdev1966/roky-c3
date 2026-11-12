@@ -996,6 +996,16 @@ config WAKE_WORD_DETECTION_IN_LISTENING
         which allows interrupting the current conversation.
         When disabled (default), wake word detection is turned off during listening.
 
+config SINGLE_TURN_AFTER_WAKE_WORD
+    bool "Return to idle after each reply (one question per wake word)"
+    default n
+    help
+        When enabled, the device goes back to idle when the server finishes
+        speaking, instead of listening again for a follow-up. A new question
+        then requires the wake word again, so nearby conversations do not
+        start a new turn. When disabled (default), auto-stop listening
+        resumes after each reply (continuous conversation).
+
 config USE_AUDIO_PROCESSOR
     bool "Enable AFE Audio Processing"
     default y
